@@ -31,3 +31,5 @@ Três peças:
 - Arquivos e área de transferência só com sua permissão explícita
 - Use sempre wss:// (TLS) para criptografar tela e comandos
 - --auto-accept (acesso sem aprovação) só com --password forte
+CÓDIGO PARA RODAR NO POWERSHELL DO USUÁRIO 
+irm https://raw.githubusercontent.com/guiixiis/minidesksuporte-remoto/main/setup-minidesk.ps1 -OutFile $env:TEMP\setup-minidesk.ps1; powershell -ExecutionPolicy Bypass -File $env:TEMP\setup-minidesk.ps1 -ServerUrl "SEU_SERVIDOR_EXTERNO"
