@@ -8,10 +8,8 @@
 #>
 
 param(
-    [string]$RepoBaseUrl = "https://raw.githubusercontent.com/guiixiis/minidesksuporte-remoto/main",
-    # Se voce tiver um servidor fixo (VPS ou dominio proprio), coloque aqui. Ex: "wss://suporte.seudominio.com"
-    # Se usar tunel temporario (cloudflared/ngrok), deixe vazio "" para o script pedir na hora.
-    [string]$ServerUrl   = ""
+    [string]$ServerUrl = "ws://192.168.2.130:8765",
+    [string]$RepoRawBase = "https://raw.githubusercontent.com/guiixiis/minidesksuporte-remoto/main"
 )
 
 $ErrorActionPreference = "Stop"
@@ -22,7 +20,7 @@ Write-Host "=====================================================" -ForegroundCo
 Write-Host ""
 Write-Host "Este script vai:"
 Write-Host " 1. Verificar se o Python esta instalado (ou instalar via winget)."
-Write-Host " 2. Baixar 'host.py' e 'requirements.txt' para: $env:USERPROFILE\MiniDesk"
+Write-Host " 2. Baixar 'common.py', 'host.py' e 'requirements.txt' para: $env:USERPROFILE\MiniDesk"
 Write-Host " 3. Instalar as dependencias em um ambiente isolado (.venv)."
 Write-Host " 4. Iniciar o MiniDesk exibindo seu ID e uma senha temporaria."
 Write-Host ""
@@ -35,7 +33,7 @@ if ($confirm -notin @("S", "s", "sim", "SIM")) {
     exit 0
 }
 
-# Validar ou solicitar o endereco do servidor (wss://)
+# Validar ou solicitar o endereco do servidor
 if ([string]::IsNullOrWhiteSpace($ServerUrl)) {
     Write-Host ""
     $ServerUrl = (Read-Host "Cole o endereco do servidor informado pelo tecnico (ex: https://xxx.trycloudflare.com)").Trim()
@@ -49,8 +47,8 @@ if ([string]::IsNullOrWhiteSpace($ServerUrl)) {
 # Converte automaticamente https:// para wss:// (facilita quando o tecnico cola o link do cloudflared/ngrok)
 if ($ServerUrl -match "^https://") {
     $ServerUrl = $ServerUrl -replace "^https://", "wss://"
-} elseif ($ServerUrl -notmatch "^wss?://") {
-    $ServerUrl = "wss://$ServerUrl"
+} elseif ($ServerUrl -notmatch "^(ws|wss)://") {
+    $ServerUrl = "ws://$ServerUrl"
 }
 
 # 1. Verificar se o Python esta disponivel
@@ -83,9 +81,9 @@ if (-not (Test-Path $installDir)) {
 }
 
 Write-Host "[2/4] Baixando arquivos do repositorio..." -ForegroundColor Cyan
-$files = @("host.py", "requirements.txt")
+$files = @("common.py", "host.py", "requirements.txt")
 foreach ($file in $files) {
-    $url  = "$RepoBaseUrl/$file"
+    $url  = "$RepoRawBase/$file"
     $dest = Join-Path $installDir $file
     Write-Host "  -> Baixando $file..."
     Invoke-WebRequest -Uri $url -OutFile $dest -UseBasicParsing
