@@ -134,13 +134,24 @@ class App:
                 await ws.send(json.dumps({"type": "ping", "t": time.time()}))
 
     async def on_frame(self, ws, msg):
+        if len(msg) <= 12:
+            return
         x, y, w, h, fw, fh = struct.unpack(">HHHHHH", msg[:12])
-        region = Image.open(io.BytesIO(msg[12:])); region.load()
+        if fw <= 0 or fh <= 0 or w <= 0 or h <= 0:
+            return
+        try:
+            region = Image.open(io.BytesIO(msg[12:]))
+            region.load()
+        except Exception:
+            await ws.send('{"type": "ack"}')
+            return
         with self.lock:
             if self.screen is None or self.screen.size != (fw, fh):
                 self.screen = Image.new("RGB", (fw, fh))
-            self.screen.paste(region, (x, y)); self.dirty = True
-        self.frames += 1; self.bytes += len(msg)
+            self.screen.paste(region, (x, y))
+            self.dirty = True
+        self.frames += 1
+        self.bytes += len(msg)
         await ws.send('{"type": "ack"}')
 
     async def on_text(self, ws, m):
