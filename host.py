@@ -26,6 +26,8 @@ from websockets.asyncio.client import connect
 from common import (V_VIDEO, V_AUDIO, V_FILE, V_IMG, WS_MAX, AUDIO_FMT, FileReceiver, ClipSync,
                     AudioCapture, audio_available, to_pcm, send_file, recv_dir, human)
 
+DEFAULT_SERVER = "ws://192.168.2.130:8765"
+
 PRESETS = {
     "fast":     dict(qmax=55, max_w=1280, fps=25),
     "balanced": dict(qmax=75, max_w=1920, fps=30),
@@ -525,11 +527,7 @@ if __name__ == "__main__":
         except Exception:
             url = None
     if not url:
-        _r = tk.Tk(); _r.withdraw()
-        url = simpledialog.askstring("MiniDesk", "Endereço do servidor (ex: ws://localhost:8765):")
-        _r.destroy()
-    if not url:
-        sys.exit(0)
+        url = DEFAULT_SERVER
     url = url.strip()
     if url.startswith("https://"): url = "wss://" + url[8:]
     elif url.startswith("http://"): url = "ws://" + url[7:]
