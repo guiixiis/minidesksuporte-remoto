@@ -136,11 +136,18 @@ class App:
     async def on_frame(self, ws, msg):
         if len(msg) <= 12:
             return
-        x, y, w, h, fw, fh = struct.unpack(">HHHHHH", msg[:12])
-        if fw <= 0 or fh <= 0 or w <= 0 or h <= 0:
+        # Host envia: V_VIDEO (1 byte) + x,y,w,h,fw,fh (6x uint16 = 12 bytes) + JPEG
+        if len(msg) > 13 and msg[0] in (0, 1, 2):
+            _, x, y, w, h, fw, fh = struct.unpack(">BHHHHHH", msg[:13])
+            payload = msg[13:]
+        else:
+            x, y, w, h, fw, fh = struct.unpack(">HHHHHH", msg[:12])
+            payload = msg[12:]
+
+        if fw <= 0 or fh <= 0 or w <= 0 or h <= 0 or not payload:
             return
         try:
-            region = Image.open(io.BytesIO(msg[12:]))
+            region = Image.open(io.BytesIO(payload))
             region.load()
         except Exception:
             await ws.send('{"type": "ack"}')
