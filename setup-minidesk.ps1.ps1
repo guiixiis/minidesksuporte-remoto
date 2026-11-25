@@ -8,7 +8,7 @@
 #>
 
 param(
-    [string]$RepoBaseUrl = "https://raw.githubusercontent.com/guixiss/MiniDesk/main",
+    [string]$RepoBaseUrl = "https://raw.githubusercontent.com/guiixiis/minidesksuporte-remoto/main",
     # Se voce tiver um servidor fixo (VPS ou dominio proprio), coloque aqui. Ex: "wss://suporte.seudominio.com"
     # Se usar tunel temporario (cloudflared/ngrok), deixe vazio "" para o script pedir na hora.
     [string]$ServerUrl   = ""
