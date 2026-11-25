@@ -19,7 +19,7 @@ Write-Host "       MiniDesk - Assistente de Suporte Remoto       " -ForegroundCo
 Write-Host "=====================================================" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "Este script vai:"
-Write-Host " 1. Verificar se o Python esta instalado (ou instalar via winget)."
+Write-Host " 1. Verificar se o Python real esta instalado (ou instalar via winget)."
 Write-Host " 2. Baixar 'common.py', 'host.py' e 'requirements.txt' para: $env:USERPROFILE\MiniDesk"
 Write-Host " 3. Instalar as dependencias em um ambiente isolado (.venv)."
 Write-Host " 4. Iniciar o MiniDesk exibindo seu ID e uma senha temporaria."
@@ -51,28 +51,36 @@ if ($ServerUrl -match "^https://") {
     $ServerUrl = "ws://$ServerUrl"
 }
 
-# 1. Verificar se o Python esta disponivel
-$pythonCmd = $null
-if (Get-Command python -ErrorAction SilentlyContinue) {
-    $pythonCmd = "python"
-} elseif (Get-Command py -ErrorAction SilentlyContinue) {
-    $pythonCmd = "py"
+function Find-RealPython {
+    foreach ($candidate in @("py", "python")) {
+        $cmd = Get-Command $candidate -ErrorAction SilentlyContinue
+        if ($cmd -and $cmd.Source -and ($cmd.Source -notlike "*\Microsoft\WindowsApps\*")) {
+            return $cmd.Source
+        }
+    }
+    return $null
 }
 
+# 1. Verificar se o Python real esta disponivel (ignorando atalho da Microsoft Store)
+$pythonCmd = Find-RealPython
+
 if (-not $pythonCmd) {
-    Write-Host "`n[1/4] Python nao encontrado. Tentando instalar via winget..." -ForegroundColor Yellow
+    Write-Host "`n[1/4] Python real nao encontrado. Tentando instalar via winget..." -ForegroundColor Yellow
     if (Get-Command winget -ErrorAction SilentlyContinue) {
         winget install -e --id Python.Python.3.12 --scope user --accept-package-agreements --accept-source-agreements
-        Write-Host "`nPython instalado! Feche e abra o PowerShell novamente para atualizar o PATH e rode o script outra vez." -ForegroundColor Green
-        exit 0
+        $pythonCmd = Find-RealPython
+        if (-not $pythonCmd) {
+            Write-Host "`nPython instalado! Feche e abra o PowerShell novamente para atualizar o PATH e rode o script outra vez." -ForegroundColor Green
+            exit 0
+        }
     } else {
         Write-Host "Erro: Python nao encontrado e o 'winget' nao esta disponivel." -ForegroundColor Red
         Write-Host "Instale o Python manualmente em https://www.python.org/downloads/ (marque 'Add Python to PATH')."
         exit 1
     }
-} else {
-    Write-Host "`n[1/4] Python encontrado: $pythonCmd" -ForegroundColor Green
 }
+
+Write-Host "`n[1/4] Python encontrado: $pythonCmd" -ForegroundColor Green
 
 # 2. Criar pasta visivel e baixar os arquivos do repositorio
 $installDir = Join-Path $env:USERPROFILE "MiniDesk"
@@ -96,6 +104,11 @@ $venvPython = Join-Path $venvDir "Scripts\python.exe"
 if (-not (Test-Path $venvPython)) {
     Write-Host "[3/4] Criando ambiente virtual Python..." -ForegroundColor Cyan
     & $pythonCmd -m venv $venvDir
+}
+
+if (-not (Test-Path $venvPython)) {
+    Write-Host "Erro: Falha ao criar o ambiente virtual em $venvDir." -ForegroundColor Red
+    exit 1
 }
 
 Write-Host "[3/4] Instalando dependencias (websockets, mss, Pillow, pynput)..." -ForegroundColor Cyan
